@@ -23,6 +23,45 @@
   <div id="tickets"></div>
 </div>
 
+<script>
+  function onTelegramAuth(user) {
+    console.log("Telegram user:", user);
+
+    // 👉 Показуємо інтерфейс
+    document.getElementById("app").style.display = "block";
+
+    // 👉 Виводимо ім'я
+    document.getElementById("user").innerText =
+      "Привіт, " + user.first_name + (user.last_name ? " " + user.last_name : "");
+
+    // 👉 Відправляємо дані на сервер
+    fetch("/auth/telegram", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(user)
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log("Server response:", data);
+    })
+    .catch(err => {
+      console.error("Auth error:", err);
+    });
+  }
+
+  function createTicket() {
+    const ticketsDiv = document.getElementById("tickets");
+
+    const ticket = document.createElement("div");
+    ticket.innerText = "🎫 Новий тікет створено: " + new Date().toLocaleString();
+
+    ticketsDiv.appendChild(ticket);
+  }
+</script>
+
 <script type="module" src="app.js"></script>
+
 </body>
 </html>
