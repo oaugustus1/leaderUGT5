@@ -1,8 +1,8 @@
 // ВСТАВ СЮДИ СВІЙ FIREBASE CONFIG
 const firebaseConfig = {
-  apiKey: "XXX",
-  authDomain: "XXX",
-  projectId: "XXX"
+  apiKey: "AIzaSyAjBvyxNONDfo3zZxfwMXsCP_yojfvt6Ug",
+  authDomain: "leaderugt5.firebaseapp.com",
+  projectId: "leaderugt5"
 };
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
