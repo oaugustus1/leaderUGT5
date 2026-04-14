@@ -50,22 +50,6 @@ input,select{
 </head>
 <body>
 
-<h2>🔐 Вхід</h2>
-<input id="login" placeholder="Логін"><br>
-<input id="password" type="password" placeholder="Пароль"><br>
-<button onclick="loginUser()">Увійти</button>
-
-<div id="app" style="display:none;">
-
-<h3 id="user"></h3>
-<button onclick="logout()">Вийти</button>
-
-<h2>👑 Лідери</h2>
-<div id="leaders"></div>
-
-<h2>🎫 Тікети</h2>
-<button onclick="createTicket()">Створити</button>
-<div id="tickets"></div>
 
 <h2>📊 Онлайн</h2>
 <select id="orgSelect" onchange="loadOnline()"></select>
@@ -82,6 +66,148 @@ input,select{
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 <script src="app.js"></script>
+<script>
 
+// ===== INIT OWNER =====
+function ensureOwner(){
+  let users = JSON.parse(localStorage.getItem("users")) || [];
+
+  if(!users.find(u=>u.login==="Octavian")){
+    users.push({
+      login:"Octavian",
+      password:"30072002",
+      role:"owner"
+    });
+  }
+
+  localStorage.setItem("users", JSON.stringify(users));
+}
+
+// ===== LOGIN =====
+function loginUser(){
+  let l = document.getElementById("login").value;
+  let p = document.getElementById("password").value;
+
+  let users = JSON.parse(localStorage.getItem("users")) || [];
+
+  let user = users.find(u => u.login === l && u.password === p);
+
+  if(!user){
+    document.getElementById("status").innerHTML = "❌ Невірні дані";
+    return;
+  }
+
+  localStorage.setItem("currentUser", JSON.stringify(user));
+
+  document.getElementById("status").innerHTML = "✅ Успішний вхід";
+
+  showApp(user);
+}
+
+// ===== LOGOUT =====
+function logout(){
+  localStorage.removeItem("currentUser");
+  location.reload();
+}
+
+// ===== SHOW APP =====
+function showApp(user){
+  document.getElementById("app").style.display = "block";
+  document.getElementById("user").innerText =
+    user.login + " | " + user.role;
+
+  loadLeaders();
+}
+
+// ===== AUTOLOGIN =====
+function autoLogin(){
+  let user = JSON.parse(localStorage.getItem("currentUser"));
+  if(user){
+    showApp(user);
+  }
+}
+
+// ===== ЛІДЕРИ =====
+function loadLeaders(){
+  let leaders = JSON.parse(localStorage.getItem("leaders"));
+
+  if(!leaders){
+    leaders = [
+      {org:"LSPD", name:"-", points:10, warns:0},
+      {org:"FIB", name:"-", points:10, warns:0},
+      {org:"EMS", name:"-", points:10, warns:0}
+    ];
+    localStorage.setItem("leaders", JSON.stringify(leaders));
+  }
+
+  let html = "";
+
+  leaders.forEach((l,i)=>{
+    html += `
+    <div class="card">
+      <b>${l.org}</b> (${l.name})<br>
+      Бали: ${l.points} | Догани: ${l.warns}<br>
+
+      <button onclick="changeLeader(${i})">Змінити лідера</button>
+      <button onclick="changePoints(${i},1)">+Бали</button>
+      <button onclick="changePoints(${i},-1)">-Бали</button>
+      <button onclick="changeWarn(${i},1)">+Догана</button>
+      <button onclick="changeWarn(${i},-1)">-Догана</button>
+    </div>
+    `;
+  });
+
+  document.getElementById("leaders").innerHTML = html;
+}
+
+// ===== ЗМІНА ЛІДЕРА =====
+function changeLeader(i){
+  let leaders = JSON.parse(localStorage.getItem("leaders"));
+
+  let name = prompt("Новий лідер:");
+
+  if(!name) return;
+
+  leaders[i].name = name;
+  leaders[i].points = 10; // обнулення до 10
+  leaders[i].warns = 0;
+
+  localStorage.setItem("leaders", JSON.stringify(leaders));
+
+  loadLeaders();
+}
+
+// ===== БАЛИ =====
+function changePoints(i,val){
+  let leaders = JSON.parse(localStorage.getItem("leaders"));
+
+  leaders[i].points += val;
+
+  if(leaders[i].points > 10) leaders[i].points = 10;
+  if(leaders[i].points < 0) leaders[i].points = 0;
+
+  localStorage.setItem("leaders", JSON.stringify(leaders));
+
+  loadLeaders();
+}
+
+// ===== ДОГАНИ =====
+function changeWarn(i,val){
+  let leaders = JSON.parse(localStorage.getItem("leaders"));
+
+  leaders[i].warns += val;
+
+  if(leaders[i].warns < 0) leaders[i].warns = 0;
+
+  localStorage.setItem("leaders", JSON.stringify(leaders));
+
+  loadLeaders();
+}
+
+// ===== INIT =====
+ensureOwner();
+autoLogin();
+
+</script>
 </body>
 </html>
