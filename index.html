@@ -1,156 +1,252 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-<meta charset="UTF-8">
-<title>Leader System</title>
-<style>
-body{font-family:Arial;background:#0f172a;color:#fff;padding:20px}
-input,button{margin:5px;padding:6px}
-.card{background:#1e293b;padding:12px;margin:10px 0;border-radius:8px}
-button{cursor:pointer}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>State Management System | Ukraine GTA</title>
+    <style>
+        :root {
+            --primary: #1a1a2e;
+            --secondary: #16213e;
+            --accent: #0f3460;
+            --highlight: #e94560;
+            --text: #e9ecef;
+            --success: #28a745;
+            --danger: #dc3545;
+        }
+
+        body {
+            font-family: 'Ubuntu', sans-serif;
+            background-color: var(--primary);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--secondary);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            margin-bottom: 30px;
+        }
+
+        .user-panel { text-align: right; }
+        .role-badge {
+            background: var(--highlight);
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+
+        .admin-section {
+            background: #1b262c;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border: 1px dashed var(--highlight);
+            display: none;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+        }
+
+        .card {
+            background: var(--secondary);
+            padding: 20px;
+            border-radius: 15px;
+            transition: transform 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 5px; height: 100%;
+            background: var(--highlight);
+        }
+
+        .card h2 { margin-top: 0; color: var(--highlight); border-bottom: 1px solid #333; padding-bottom: 10px; }
+
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-size: 0.9em; color: #aaa; }
+        
+        input {
+            width: 100%;
+            padding: 10px;
+            background: #0f3460;
+            border: 1px solid #16213e;
+            color: white;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        .reprimands-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        .btn-save { background: var(--success); color: white; margin-top: 10px; }
+        .btn-save:hover { background: #218838; }
+
+        .status-msg {
+            font-size: 0.8em;
+            margin-top: 10px;
+            min-height: 1.2em;
+        }
+
+        .critical { color: var(--danger); animation: blink 1s infinite; }
+        @keyframes blink { 0% {opacity: 1;} 50% {opacity: 0.5;} 100% {opacity: 1;} }
+    </style>
 </head>
 <body>
-<h2>🔐 Вхід</h2>
-<div id="status"></div>
-<div id="app" style="display:none;">
-  <h3 id="user"></h3>
-  <button id="logoutBtn">Вийти</button>
-  <h2>👑 Лідери</h2>
-  <div id="leaders"></div>
-</div>
-<script>
-// ====== INIT OWNER ======
-function ensureOwner(){
-  let users = JSON.parse(localStorage.getItem("users")) || [];
 
-  if(!users.find(u => u.login === "Octavian")){
-    users.push({
-      login: "Octavian",
-      password: "30072002",
-      role: "owner"
-    });
-    localStorage.setItem("users", JSON.stringify(users));
-  }
-}
+<div class="container">
+    <header>
+        <div>
+            <h1>UKRAINE GTA <span style="font-weight: 200;">State System</span></h1>
+        </div>
+        <div class="user-panel">
+            <div id="username-display">Завантаження...</div>
+            <span class="role-badge" id="role-display">...</span>
+        </div>
+    </header>
 
-// ====== LOGIN ======
-function loginUser(){
-  const l = document.getElementById("login").value.trim();
-  const p = document.getElementById("password").value.trim();
-
-  const users = JSON.parse(localStorage.getItem("users")) || [];
-  const user = users.find(u => u.login === l && u.password === p);
-
-  if(!user){
-    document.getElementById("status").innerText = "❌ Невірні дані";
-    return;
-  }
-
-  localStorage.setItem("currentUser", JSON.stringify(user));
-  document.getElementById("status").innerText = "✅ Успішний вхід";
-  showApp(user);
-}
-
-// ====== LOGOUT ======
-function logout(){
-  localStorage.removeItem("currentUser");
-  location.reload();
-}
-
-// ====== SHOW APP ======
-function showApp(user){
-  document.getElementById("app").style.display = "block";
-  document.getElementById("user").innerText = user.login + " | " + user.role;
-  loadLeaders();
-}
-
-// ====== AUTOLOGIN ======
-function autoLogin(){
-  const user = JSON.parse(localStorage.getItem("currentUser"));
-  if(user){
-    showApp(user);
-  }
-}
-
-// ====== ЛІДЕРИ ======
-function loadLeaders(){
-  let leaders = JSON.parse(localStorage.getItem("leaders"));
-
-  if(!leaders){
-    leaders = [
-      {org:"LSPD", name:"-", points:10, warns:0},
-      {org:"FIB", name:"-", points:10, warns:0},
-      {org:"EMS", name:"-", points:10, warns:0}
-    ];
-    localStorage.setItem("leaders", JSON.stringify(leaders));
-  }
-
-  let html = "";
-
-  leaders.forEach((l,i)=>{
-    html += `
-    <div class="card">
-      <b>${l.org}</b> (${l.name})<br>
-      Бали: ${l.points} | Догани: ${l.warns}<br>
-      <button onclick="changeLeader(${i})">Змінити</button>
-      <button onclick="changePoints(${i},1)">+Бали</button>
-      <button onclick="changePoints(${i},-1)">-Бали</button>
-      <button onclick="changeWarn(${i},1)">+Догана</button>
-      <button onclick="changeWarn(${i},-1)">-Догана</button>
+    <div id="admin-tools" class="admin-section">
+        <h3>Панель Адміністратора (ГА / Куратор State)</h3>
+        <p>Ви можете створювати акаунти та змінювати ролі іншим користувачам.</p>
+        <button style="background: var(--highlight); width: auto;" onclick="alert('Функція в розробці...')">Додати нового лідера</button>
     </div>
-    `;
-  });
 
-  document.getElementById("leaders").innerHTML = html;
-}
+    <div class="grid" id="main-grid">
+        </div>
+</div>
 
-// ====== ЗМІНА ЛІДЕРА ======
-function changeLeader(i){
-  let leaders = JSON.parse(localStorage.getItem("leaders"));
-  const name = prompt("Новий лідер:");
+<script>
+    // 1. Організації та початкові дані
+    const orgs = ["Government", "LSPD", "BCSD", "FIB", "Army", "WZL", "EMS Hospital"];
+    
+    // Імітація поточної ролі (Змініть для тесту: "Main Admin", "State Curator", "Leader")
+    const currentUser = {
+        name: "Адміністратор",
+        role: "Main Admin" 
+    };
 
-  if(!name) return;
+    // 2. Функція завантаження даних
+    function loadData() {
+        const saved = localStorage.getItem('stateSystemData');
+        if (saved) {
+            return JSON.parse(saved);
+        } else {
+            // Початковий стан, якщо база порожня
+            const initial = {};
+            orgs.forEach(o => {
+                initial[o] = { leader: "", points: 10, oral: 0, strict: 0 };
+            });
+            return initial;
+        }
+    }
 
-  leaders[i].name = name;
-  leaders[i].points = 10;
-  leaders[i].warns = 0;
+    // 3. Збереження даних
+    let db = loadData();
 
-  localStorage.setItem("leaders", JSON.stringify(leaders));
-  loadLeaders();
-}
+    function saveToDB(orgName) {
+        // Отримуємо значення з полів
+        const leader = document.getElementById(`leader-${orgName}`).value;
+        let points = parseInt(document.getElementById(`pts-${orgName}`).value);
+        const oral = parseInt(document.getElementById(`oral-${orgName}`).value);
+        const strict = parseInt(document.getElementById(`strict-${orgName}`).value);
 
-// ====== БАЛИ ======
-function changePoints(i,val){
-  let leaders = JSON.parse(localStorage.getItem("leaders"));
+        // Валідація балів (10 - 150)
+        if (points < 10) points = 10;
+        if (points > 150) points = 150;
 
-  leaders[i].points += val;
-  if(leaders[i].points > 10) leaders[i].points = 10;
-  if(leaders[i].points < 0) leaders[i].points = 0;
+        // Оновлюємо локальний об'єкт
+        db[orgName] = { leader, points, oral, strict };
+        
+        // Записуємо в LocalStorage
+        localStorage.setItem('stateSystemData', JSON.stringify(db));
+        
+        alert(`Дані ${orgName} збережено!`);
+        render(); // Перемалювати для оновлення статусів
+    }
 
-  localStorage.setItem("leaders", JSON.stringify(leaders));
-  loadLeaders();
-}
+    // 4. Відображення
+    function render() {
+        const grid = document.getElementById('main-grid');
+        grid.innerHTML = '';
 
-// ====== ДОГАНИ ======
-function changeWarn(i,val){
-  let leaders = JSON.parse(localStorage.getItem("leaders"));
+        // Налаштування хедера
+        document.getElementById('username-display').innerText = currentUser.name;
+        document.getElementById('role-display').innerText = currentUser.role;
 
-  leaders[i].warns += val;
-  if(leaders[i].warns < 0) leaders[i].warns = 0;
+        // Показ адмін-панелі
+        if (currentUser.role === "Main Admin" || currentUser.role === "State Curator") {
+            document.getElementById('admin-tools').style.display = "block";
+        }
 
-  localStorage.setItem("leaders", JSON.stringify(leaders));
-  loadLeaders();
-}
+        orgs.forEach(org => {
+            const data = db[org];
+            const isCritical = data.strict >= 3;
 
-// ====== EVENTS ======
-document.getElementById("loginBtn").addEventListener("click", loginUser);
-document.getElementById("logoutBtn").addEventListener("click", logout);
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <h2>${org}</h2>
+                <div class="input-group">
+                    <label>Лідер</label>
+                    <input type="text" id="leader-${org}" value="${data.leader}" placeholder="Нікнейм...">
+                </div>
+                <div class="input-group">
+                    <label>Бали (10 - 150)</label>
+                    <input type="number" id="pts-${org}" value="${data.points}" min="10" max="150">
+                </div>
+                <div class="reprimands-grid">
+                    <div class="input-group">
+                        <label>Усні (0-3)</label>
+                        <input type="number" id="oral-${org}" value="${data.oral}" min="0" max="3">
+                    </div>
+                    <div class="input-group">
+                        <label>Суворі (0-3)</label>
+                        <input type="number" id="strict-${org}" value="${data.strict}" min="0" max="3">
+                    </div>
+                </div>
+                <div class="status-msg ${isCritical ? 'critical' : ''}">
+                    ${isCritical ? '⚠ КРИТИЧНО: 3/3 СУВОРИХ' : ''}
+                </div>
+                <button class="btn-save" onclick="saveToDB('${org}')">ОНОВИТИ ДАНІ</button>
+            `;
+            grid.appendChild(card);
+        });
+    }
 
-// ====== INIT ======
-ensureOwner();
-autoLogin();
+    // Запуск при завантаженні сторінки
+    window.onload = render;
 </script>
+
 </body>
 </html>
-:::
