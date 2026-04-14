@@ -1,133 +1,79 @@
 <!DOCTYPE html>
-<html>
+<html lang="uk">
 <head>
 <meta charset="UTF-8">
-<title>Leader System ULTIMATE</title>
-
+<title>Leader System</title>
 <style>
-body{
-  font-family:Arial;
-  background:linear-gradient(135deg,#0f172a,#1e293b);
-  color:#fff;
-  padding:20px;
-}
-
-h2{
-  border-bottom:1px solid #334155;
-  padding-bottom:5px;
-}
-
-.card{
-  background:#1e293b;
-  padding:15px;
-  margin:10px 0;
-  border-radius:10px;
-  box-shadow:0 0 10px rgba(0,0,0,0.3);
-}
-
-button{
-  margin:4px;
-  padding:6px 10px;
-  border:none;
-  border-radius:6px;
-  background:#3b82f6;
-  color:#fff;
-  cursor:pointer;
-}
-
-button:hover{
-  background:#2563eb;
-}
-
-input,select{
-  margin:5px;
-  padding:6px;
-  border-radius:6px;
-  border:none;
-}
+body{font-family:Arial;background:#0f172a;color:#fff;padding:20px}
+input,button{margin:5px;padding:6px}
+.card{background:#1e293b;padding:12px;margin:10px 0;border-radius:8px}
+button{cursor:pointer}
 </style>
-
 </head>
 <body>
-
-
-<h2>📊 Онлайн</h2>
-<select id="orgSelect" onchange="loadOnline()"></select>
-<div id="online"></div>
-
-<h2>⚙️ Адмін панель</h2>
-<div id="admin"></div>
-
-<h2>📜 Логи</h2>
-<div id="logs"></div>
-
+<h2>🔐 Вхід</h2>
+<div id="status"></div>
+<div id="app" style="display:none;">
+  <h3 id="user"></h3>
+  <button id="logoutBtn">Вийти</button>
+  <h2>👑 Лідери</h2>
+  <div id="leaders"></div>
 </div>
-
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-<script src="app.js"></script>
 <script>
-
-// ===== INIT OWNER =====
+// ====== INIT OWNER ======
 function ensureOwner(){
   let users = JSON.parse(localStorage.getItem("users")) || [];
 
-  if(!users.find(u=>u.login==="Octavian")){
+  if(!users.find(u => u.login === "Octavian")){
     users.push({
-      login:"Octavian",
-      password:"30072002",
-      role:"owner"
+      login: "Octavian",
+      password: "30072002",
+      role: "owner"
     });
+    localStorage.setItem("users", JSON.stringify(users));
   }
-
-  localStorage.setItem("users", JSON.stringify(users));
 }
 
-// ===== LOGIN =====
+// ====== LOGIN ======
 function loginUser(){
-  let l = document.getElementById("login").value;
-  let p = document.getElementById("password").value;
+  const l = document.getElementById("login").value.trim();
+  const p = document.getElementById("password").value.trim();
 
-  let users = JSON.parse(localStorage.getItem("users")) || [];
-
-  let user = users.find(u => u.login === l && u.password === p);
+  const users = JSON.parse(localStorage.getItem("users")) || [];
+  const user = users.find(u => u.login === l && u.password === p);
 
   if(!user){
-    document.getElementById("status").innerHTML = "❌ Невірні дані";
+    document.getElementById("status").innerText = "❌ Невірні дані";
     return;
   }
 
   localStorage.setItem("currentUser", JSON.stringify(user));
-
-  document.getElementById("status").innerHTML = "✅ Успішний вхід";
-
+  document.getElementById("status").innerText = "✅ Успішний вхід";
   showApp(user);
 }
 
-// ===== LOGOUT =====
+// ====== LOGOUT ======
 function logout(){
   localStorage.removeItem("currentUser");
   location.reload();
 }
 
-// ===== SHOW APP =====
+// ====== SHOW APP ======
 function showApp(user){
   document.getElementById("app").style.display = "block";
-  document.getElementById("user").innerText =
-    user.login + " | " + user.role;
-
+  document.getElementById("user").innerText = user.login + " | " + user.role;
   loadLeaders();
 }
 
-// ===== AUTOLOGIN =====
+// ====== AUTOLOGIN ======
 function autoLogin(){
-  let user = JSON.parse(localStorage.getItem("currentUser"));
+  const user = JSON.parse(localStorage.getItem("currentUser"));
   if(user){
     showApp(user);
   }
 }
 
-// ===== ЛІДЕРИ =====
+// ====== ЛІДЕРИ ======
 function loadLeaders(){
   let leaders = JSON.parse(localStorage.getItem("leaders"));
 
@@ -147,8 +93,7 @@ function loadLeaders(){
     <div class="card">
       <b>${l.org}</b> (${l.name})<br>
       Бали: ${l.points} | Догани: ${l.warns}<br>
-
-      <button onclick="changeLeader(${i})">Змінити лідера</button>
+      <button onclick="changeLeader(${i})">Змінити</button>
       <button onclick="changePoints(${i},1)">+Бали</button>
       <button onclick="changePoints(${i},-1)">-Бали</button>
       <button onclick="changeWarn(${i},1)">+Догана</button>
@@ -160,54 +105,52 @@ function loadLeaders(){
   document.getElementById("leaders").innerHTML = html;
 }
 
-// ===== ЗМІНА ЛІДЕРА =====
+// ====== ЗМІНА ЛІДЕРА ======
 function changeLeader(i){
   let leaders = JSON.parse(localStorage.getItem("leaders"));
-
-  let name = prompt("Новий лідер:");
+  const name = prompt("Новий лідер:");
 
   if(!name) return;
 
   leaders[i].name = name;
-  leaders[i].points = 10; // обнулення до 10
+  leaders[i].points = 10;
   leaders[i].warns = 0;
 
   localStorage.setItem("leaders", JSON.stringify(leaders));
-
   loadLeaders();
 }
 
-// ===== БАЛИ =====
+// ====== БАЛИ ======
 function changePoints(i,val){
   let leaders = JSON.parse(localStorage.getItem("leaders"));
 
   leaders[i].points += val;
-
   if(leaders[i].points > 10) leaders[i].points = 10;
   if(leaders[i].points < 0) leaders[i].points = 0;
 
   localStorage.setItem("leaders", JSON.stringify(leaders));
-
   loadLeaders();
 }
 
-// ===== ДОГАНИ =====
+// ====== ДОГАНИ ======
 function changeWarn(i,val){
   let leaders = JSON.parse(localStorage.getItem("leaders"));
 
   leaders[i].warns += val;
-
   if(leaders[i].warns < 0) leaders[i].warns = 0;
 
   localStorage.setItem("leaders", JSON.stringify(leaders));
-
   loadLeaders();
 }
 
-// ===== INIT =====
+// ====== EVENTS ======
+document.getElementById("loginBtn").addEventListener("click", loginUser);
+document.getElementById("logoutBtn").addEventListener("click", logout);
+
+// ====== INIT ======
 ensureOwner();
 autoLogin();
-
 </script>
 </body>
 </html>
+:::
