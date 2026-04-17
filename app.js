@@ -1,135 +1,120 @@
-<!DOCTYPE html>
-<html lang="uk">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>State Management | Database Sync</title>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-    
-    <style>
-        :root {
-            --bg: #0f172a; --card: #1e293b; --accent: #38bdf8;
-            --text: #f1f5f9; --danger: #ef4444; --success: #22c55e;
-        }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-        .card { background: var(--card); padding: 20px; border-radius: 12px; border-top: 4px solid var(--accent); }
-        .input-group { margin-bottom: 12px; }
-        label { display: block; font-size: 0.8rem; margin-bottom: 4px; opacity: 0.7; }
-        input { 
-            width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #334155;
-            background: #0f172a; color: white; box-sizing: border-box;
-        }
-        button { 
-            width: 100%; padding: 10px; border: none; border-radius: 6px; 
-            background: var(--success); color: white; cursor: pointer; font-weight: bold; 
-        }
-        button:hover { opacity: 0.9; }
-        .admin-only { display: none; background: #334155; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
-    </style>
-</head>
-<body>
+// Користувачі
+const USERS = [
+    { login: 'Octavian', pass: '30072002', role: 'Curator State', name: 'Octavian' },
+    { login: 'admin', pass: 'admin', role: 'Main Admin', name: 'Адміністратор' }
+];
 
-<div class="container">
-    <h1>Керування Держ. Структурами</h1>
-    
-    <div id="admin-panel" class="admin-only">
-        <h3>Панель Вищої Адміністрації</h3>
-        <p>Права доступу: Створення акаунтів та зміна ролей дозволена.</p>
-    </div>
+// Початкові дані організацій
+const DEFAULT_ORGS = [
+    { id: 'gov', name: 'Government', leader: 'Вакантно', points: 0, warnings: { oral: 0, strict: 0 } },
+    { id: 'lspd', name: 'LSPD', leader: 'Вакантно', points: 0, warnings: { oral: 0, strict: 0 } },
+    { id: 'ems', name: 'EMS Hospital', leader: 'Вакантно', points: 0, warnings: { oral: 0, strict: 0 } },
+    { id: 'wn', name: 'WZL News', leader: 'Вакантно', points: 0, warnings: { oral: 0, strict: 0 } },
+    { id: 'bcsd', name: 'BCSD', leader: 'Вакантно', points: 0, warnings: { oral: 0, strict: 0 } },
+    { id: 'fib', name: 'FIB', leader: 'Вакантно', points: 0, warnings: { oral: 0, strict: 0 } }
+];
 
-    <div class="grid" id="org-list">
+let organizations = JSON.parse(localStorage.getItem('state_db_final')) || DEFAULT_ORGS;
+let currentUser = null;
+
+// Функція входу
+window.handleLogin = function() {
+    const u = document.getElementById('username').value.trim();
+    const p = document.getElementById('password').value.trim();
+
+    const found = USERS.find(user => user.login === u && user.pass === p);
+
+    if (found) {
+        currentUser = found;
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('dashboard').classList.remove('hidden');
+        
+        document.getElementById('user-display-name').innerText = currentUser.name;
+        document.getElementById('user-role-badge').innerText = currentUser.role;
+        document.getElementById('user-welcome').innerText = `Вітаємо, ${currentUser.name}!`;
+
+        if (['Main Admin', 'Curator State'].includes(currentUser.role)) {
+            document.getElementById('admin-panel').classList.remove('hidden');
+        }
+        renderOrgs();
+    } else {
+        alert('Помилка: Невірні дані!');
+    }
+};
+
+// Підтримка Enter
+document.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && !document.getElementById('login-screen').classList.contains('hidden')) {
+        handleLogin();
+    }
+});
+
+function renderOrgs() {
+    const list = document.getElementById('org-list');
+    list.innerHTML = '';
+    organizations.forEach(org => {
+        const div = document.createElement('div');
+        div.className = 'card p-6 border border-slate-700 flex flex-col justify-between shadow-lg';
+        div.innerHTML = `
+            <div>
+                <div class="flex justify-between items-start mb-4">
+                    <h4 class="text-xl font-bold text-white">${org.name}</h4>
+                    <span class="bg-blue-600/20 text-blue-400 px-3 py-1 rounded-full text-xs font-bold">${org.points} PTS</span>
+                </div>
+                <p class="text-sm text-slate-400 mb-6 font-medium">Лідер: <span class="text-slate-200">${org.leader}</span></p>
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <div class="bg-slate-800/50 p-3 rounded-lg border border-slate-700">
+                        <p class="text-[10px] uppercase text-slate-500 font-bold mb-1">Усні</p>
+                        <p class="text-xl font-bold text-yellow-500">${org.warnings.oral}</p>
+                    </div>
+                    <div class="bg-slate-800/50 p-3 rounded-lg border border-slate-700">
+                        <p class="text-[10px] uppercase text-slate-500 font-bold mb-1">Суворі</p>
+                        <p class="text-xl font-bold text-red-500">${org.warnings.strict}</p>
+                    </div>
+                </div>
+            </div>
+            <button onclick="manageOrg('${org.id}')" class="w-full bg-slate-700 hover:bg-slate-600 text-white py-2.5 rounded-lg text-sm font-bold transition-all">Керування</button>
+        `;
+        list.appendChild(div);
+    });
+}
+
+window.manageOrg = function(id) {
+    const org = organizations.find(o => o.id === id);
+    document.getElementById('modal-title').innerText = org.name;
+    const content = document.getElementById('modal-content');
+    content.innerHTML = `
+        <div class="grid grid-cols-2 gap-3">
+            <button onclick="updateStat('${id}', 'oral', 1)" class="bg-yellow-600 p-3 rounded-xl text-white font-bold text-[10px] uppercase shadow-md">+ Усна догана</button>
+            <button onclick="updateStat('${id}', 'strict', 1)" class="bg-red-600 p-3 rounded-xl text-white font-bold text-[10px] uppercase shadow-md">+ Сувора догана</button>
+            <button onclick="updateStat('${id}', 'points', 10)" class="bg-green-600 p-3 rounded-xl text-white font-bold text-[10px] uppercase shadow-md">+ 10 Балів</button>
+            <button onclick="updateStat('${id}', 'points', -10)" class="bg-slate-700 p-3 rounded-xl text-white font-bold text-[10px] uppercase shadow-md">- 10 Балів</button>
         </div>
-</div>
+        <button onclick="setLeader('${id}')" class="w-full mt-4 bg-blue-600/10 text-blue-400 border border-blue-600/30 p-3 rounded-xl font-bold text-xs uppercase hover:bg-blue-600 hover:text-white transition-all">Змінити лідера</button>
+    `;
+    document.getElementById('modal-overlay').classList.remove('hidden');
+};
 
-<script>
-    // --- 1. ВСТАВТЕ ВАШІ ДАНІ З FIREBASE ТУТ ---
-    const firebaseConfig = {
-       const firebaseConfig = {
-  apiKey: "AIzaSyAjBvyxNONDfo3zZxfwMXsCP_yojfvt6Ug",
-  authDomain: "leaderugt5.firebaseapp.com",
-  projectId: "leaderugt5"
-    };
+window.updateStat = function(id, type, val) {
+    const org = organizations.find(o => o.id === id);
+    if (type === 'oral') org.warnings.oral += val;
+    if (type === 'strict') org.warnings.strict += val;
+    if (type === 'points') org.points += val;
+    save();
+    renderOrgs();
+    closeModal();
+};
 
-    // Ініціалізація
-    firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
-
-    // Роль користувача (для тесту: 'admin' або 'leader')
-    const userRole = 'admin'; 
-
-    const orgs = ["Government", "LSPD", "BCSD", "FIB", "Army", "WZL", "EMS Hospital"];
-
-    // --- 2. СИНХРОНІЗАЦІЯ З БАЗОЮ В РЕАЛЬНОМУ ЧАСІ ---
-    function initApp() {
-        if (userRole === 'admin') document.getElementById('admin-panel').style.display = 'block';
-
-        const orgList = document.getElementById('org-list');
-
-        // Слухаємо зміни в базі даних
-        database.ref('organizations').on('value', (snapshot) => {
-            const data = snapshot.val() || {};
-            orgList.innerHTML = '';
-
-            orgs.forEach(org => {
-                const info = data[org] || { leader: "Відсутній", points: 10, oral: 0, strict: 0 };
-                
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `
-                    <h2>${org}</h2>
-                    <div class="input-group">
-                        <label>Лідер</label>
-                        <input type="text" id="leader-${org}" value="${info.leader}">
-                    </div>
-                    <div class="input-group">
-                        <label>Бали (10-150)</label>
-                        <input type="number" id="pts-${org}" value="${info.points}" min="10" max="150">
-                    </div>
-                    <div style="display:flex; gap:10px">
-                        <div class="input-group">
-                            <label>Усні</label>
-                            <input type="number" id="oral-${org}" value="${info.oral}" max="3">
-                        </div>
-                        <div class="input-group">
-                            <label>Суворі</label>
-                            <input type="number" id="strict-${org}" value="${info.strict}" max="3">
-                        </div>
-                    </div>
-                    <button onclick="updateOrg('${org}')">ОНОВИТИ В БАЗІ</button>
-                `;
-                orgList.appendChild(card);
-            });
-        });
+window.setLeader = function(id) {
+    const name = prompt("Введіть ім'я лідера:");
+    if (name) {
+        organizations.find(o => o.id === id).leader = name;
+        save();
+        renderOrgs();
+        closeModal();
     }
+};
 
-    // --- 3. ФУНКЦІЯ ЗАПИСУ В БАЗУ ---
-    function updateOrg(name) {
-        const leader = document.getElementById(`leader-${name}`).value;
-        let points = parseInt(document.getElementById(`pts-${name}`).value);
-        const oral = parseInt(document.getElementById(`oral-${name}`).value);
-        const strict = parseInt(document.getElementById(`strict-${name}`).value);
-
-        // Валідація лімітів балів
-        if (points < 10) points = 10;
-        if (points > 150) points = 150;
-
-        database.ref('organizations/' + name).set({
-            leader: leader,
-            points: points,
-            oral: oral,
-            strict: strict,
-            lastUpdated: new Date().toLocaleString()
-        }).then(() => {
-            console.log("Дані успішно синхронізовано з хмарою");
-        }).catch((error) => {
-            alert("Помилка доступу до бази: " + error.message);
-        });
-    }
-
-    initApp();
-</script>
-</body>
-</html>
+function save() { localStorage.setItem('state_db_final', JSON.stringify(organizations)); }
+window.closeModal = function() { document.getElementById('modal-overlay').classList.add('hidden'); };
+window.logout = function() { location.reload(); };
